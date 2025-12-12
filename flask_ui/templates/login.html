@@ -3,77 +3,56 @@
 <head>
     <title>Login</title>
     <style>
-        body {
-            font-family: Arial;
-            background: #f2f2f2;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        .login-box {
-            width: 350px;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .login-box h3 {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            box-sizing: border-box;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background: #fff;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 12px;
-            margin-top: 20px;
-            background: #28a745;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        .btn:hover {
-            background: #218838;
-        }
-
-        .error {
-            color: red;
-            margin-top: 10px;
-            text-align: center;
-        }
-
+        body { font-family: Arial; background: #f2f2f2; display:flex; justify-content:center; align-items:center; height:100vh; }
+        .login-box { width:350px; background:white; padding:30px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+        .input-field { width:100%; padding:12px; margin-top:10px; box-sizing:border-box; border:1px solid #ddd; border-radius:8px; }
+        .btn { width:100%; padding:12px; margin-top:20px; background:#28a745; color:white; border:none; border-radius:8px; cursor:pointer; }
     </style>
 </head>
 <body>
-
 <div class="login-box">
     <h3>Login</h3>
-
-    <form action="/login" method="POST">
-        <input type="text" name="username" placeholder="Enter username" class="input-field" required>
-        <input type="password" name="password" placeholder="Enter password" class="input-field" required>
+    <form onsubmit="doLogin(event)">
+        <input type="text" id="email" placeholder="Enter email" class="input-field" required>
+        <input type="password" id="password" placeholder="Enter password" class="input-field" required>
         <button type="submit" class="btn">Login</button>
     </form>
-
-    {% if error %}
-        <p class="error">{{ error }}</p>
-    {% endif %}
+    <p id="error" style="color:red; text-align:center;"></p>
 </div>
 
+<script>
+async function doLogin(event) {
+    event.preventDefault();
+    document.getElementById("error").innerText = "";
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const session_id = "sess_" + Math.random().toString(36).substring(2, 12);
+
+    try {
+        const response = await fetch("/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password, session_id })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            document.getElementById("error").innerText = data.message || "Login failed";
+            return;
+        }
+
+        // store session for chat page
+        localStorage.setItem("session_id", session_id);
+        localStorage.setItem("user_email", email);
+
+        // go to chat page
+        window.location.href = "/chat";
+    } catch (e) {
+        document.getElementById("error").innerText = "Backend not reachable. Start backend and try again.";
+    }
+}
+</script>
 </body>
 </html>

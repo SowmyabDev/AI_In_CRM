@@ -1,44 +1,43 @@
-from flask import Flask, render_template, request, redirect, url_for, session
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from fastapi_backend.users_db import USERS
+from flask import Flask, render_template, request, jsonify
+import requests
+import os
 
-app = Flask(__name__)
-app.secret_key = "mysecretkey123"
+app = Flask(__name__, template_folder="templates", static_folder="static")
+FASTAPI_URL = os.environ.get("FASTAPI_URL", "http://127.0.0.1:8000")
 
 @app.route("/")
-def home():
-    if "user" in session:
-        return redirect(url_for("chat"))
+def index():
     return render_template("login.html")
+
+@app.route("/chat")
+def chat_page():
+    return render_template("chat.html")
 
 @app.route("/login", methods=["POST"])
 def login():
-    username = request.form.get("username", "").strip()
-    password = request.form.get("password", "").strip()
+    data = request.get_json()
+    try:
+        resp = requests.post(f"{FASTAPI_URL}/login", json=data, timeout=10)
+        return jsonify(resp.json()), resp.status_code
+    except requests.RequestException:
+        return jsonify({"success": False, "message": "Backend not available"}), 503
 
-    # Debug prints
-    print("Username:", username)
-    print("Password typed:", password)
-    print("Stored user:", USERS.get(username))
+@app.route("/chat_api", methods=["POST"])
+def chat_api():
+    data = request.get_json()
+    try:
+        resp = requests.post(f"{FASTAPI_URL}/chat", json=data, timeout=120)
+        return jsonify(resp.json()), resp.status_code
+    except requests.RequestException:
+        return jsonify({"reply": "⚠️ Backend not reachable. Please try later."}), 503
 
-    # Correct login check for nested user structure
-    if username in USERS and USERS[username]["password"] == password:
-        session["user"] = username
-        return redirect(url_for("chat"))
-    else:
-        return render_template("login.html", error="Invalid username or password")
-
-@app.route("/chat")
-def chat():
-    if "user" not in session:
-        return redirect(url_for("home"))
-    return render_template("chat.html")
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("home"))
+@app.route("/backend_health")
+def backend_health():
+    try:
+        resp = requests.get(f"{FASTAPI_URL}/health", timeout=5)
+        return jsonify(resp.json())
+    except requests.RequestException:
+        return jsonify({"ok": False}), 503
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
