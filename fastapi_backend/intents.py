@@ -2,83 +2,85 @@ import re
 from products_data import products
 
 INTENT_PATTERNS = {
-    "greet": ["hi", "hello", "hey", "good morning", "good evening"],
-    "goodbye": ["bye", "thank you", "thanks", "thanks!"],
+    "confirm_escalation": [
+        "connect me", "connect", "escalate", "talk to agent"
+    ],
+
+    "human": [
+        "human", "agent", "support", "contact support"
+    ],
+
+    "greet": [
+        "hi", "hello", "hey", "good morning", "good evening"
+    ],
+
+    "goodbye": [
+        "bye", "thank you", "thanks"
+    ],
+
+    "my_orders": [
+        "my orders", "order history", "orders", "order list"
+    ],
 
     "order_status": [
-        "track", "tracking", "order status", "where is my order", "where is my parcel",
-        "missing order", "lost order", "order missing", "delivery status"
+        "track", "tracking", "order status",
+        "where is my order", "where is my parcel",
+        "missing order", "lost order", "order missing"
     ],
 
     "delivery_query": [
-        "delivery", "arrive", "reach", "ship", "shipping", "when will", "expected"
+        "delivery", "arrive", "reach", "ship",
+        "shipping", "when will", "expected"
     ],
 
     "return_request": [
-        "return", "send back", "replace", "exchange", "wrong item", "incorrect item"
+        "return", "send back", "replace",
+        "exchange", "wrong item", "incorrect item"
     ],
 
-    "refund_query": ["refund", "money back", "reimburse"],
+    "refund_query": [
+        "refund", "money back", "reimburse"
+    ],
 
-    "complaint": ["complaint", "issue", "problem", "broken", "damaged", "not working"],
+    "complaint": [
+        "complaint", "issue", "problem",
+        "broken", "damaged", "not working"
+    ],
 
-    "search": ["search", "find", "look for", "show me", "show"],
-    "product_info": ["details", "info on", "information about", "specs"],
+    "add_to_cart": [
+        "add to cart", "add"
+    ],
 
-    "add_to_cart": ["add", "add to cart"],
-    "remove_from_cart": ["remove", "delete", "remove from cart"],
-    "show_cart": ["my cart", "show cart", "cart"],
+    "remove_from_cart": [
+        "remove from cart", "remove", "delete"
+    ],
 
-    "my_orders": ["my orders", "order history"],
+    "show_cart": [
+        "my cart", "show cart", "cart"
+    ],
 
-    "human": ["human", "agent", "support", "help", "contact support"],
-    "confirm_escalation": ["yes", "ok", "okay", "sure", "please do", "please"]
+    "search": [
+        "search", "find", "look for",
+        "looking for", "show me", "show"
+    ],
+
+    "product_info": [
+        "details", "info on", "information about", "specs"
+    ],
+
+    "ack": [
+        "ok", "okay", "sure", "alright", "cool", "nice"
+    ]
 }
 
-def detect_intent(text):
+def detect_intent(text: str) -> str:
     t = text.lower().strip()
 
-    if any(p in t for p in ["connect me", "connect", "escalate", "talk to agent"]):
-        return "confirm_escalation"
-
-    if any(p in t for p in ["human", "agent", "support"]):
-        return "human"
-
-    if any(p in t for p in ["hi", "hello", "hey"]):
-        return "greet"
-
-    if any(p in t for p in ["bye", "thanks", "thank you"]):
-        return "goodbye"
-
-    if any(p in t for p in ["my orders", "orders", "order list"]):
-        return "my_orders"
-
-    if any(p in t for p in ["track", "order status", "where is my order"]):
-        return "order_status"
-
-    if any(p in t for p in ["when will", "delivery", "arrive"]):
-        return "delivery_query"
-
-    if any(p in t for p in ["return", "send back"]):
-        return "returns"
-
-    if any(p in t for p in ["refund", "money back"]):
-        return "refund_query"
-
-    if "add" in t:
-        return "add_to_cart"
-
-    if "remove" in t:
-        return "remove_from_cart"
-
-    if "cart" in t:
-        return "show_cart"
-
-    if any(p in t for p in ["search", "find", "looking for"]):
-        return "search"
-
-    if text.lower() in ["ok", "okay", "okay nice", "nice", "cool", "sure", "alright"]:
-        return "ack"
+    # Check intents in defined order
+    for intent, patterns in INTENT_PATTERNS.items():
+        for p in patterns:
+            if p in t:
+                return intent
 
     return "unknown"
 
