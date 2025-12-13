@@ -3,11 +3,7 @@ from products_data import products
 
 INTENT_PATTERNS = {
     "confirm_escalation": [
-        "connect me", "connect", "escalate", "talk to agent"
-    ],
-
-    "human": [
-        "human", "agent", "support", "contact support"
+        "connect me", "connect", "escalate", "talk to agent","human", "agent", "support", "contact support"
     ],
 
     "greet": [
