@@ -42,8 +42,6 @@ def generate_reply(intent: str, user_text: str, context: dict) -> Optional[str]:
 Intent: {intent}
 Context: {json.dumps(context)}
 User message: {user_text}
-
-Provide a short (1-3 sentences), businesslike reply.
 """
     try:
         resp = _llm(prompt, max_tokens=120)
