@@ -6,3 +6,8 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+    session_id: str
