@@ -75,7 +75,7 @@ RAW_INTENT_PATTERNS: Dict[str, List[str]] = {
 
 # Compile regex patterns for efficiency
 COMPILED_PATTERNS: Dict[str, List[re.Pattern]] = {
-    intent: [re.compile(rf"\\b{re.escape(pat)}\\b", re.IGNORECASE) for pat in pats]
+    intent: [re.compile(r"\b" + re.escape(pat) + r"\b", re.IGNORECASE) for pat in pats]
     for intent, pats in RAW_INTENT_PATTERNS.items()
 }
 

@@ -8,10 +8,11 @@ LOGGER = logging.getLogger("llm_client")
 logging.basicConfig(level=logging.INFO)
 
 # Environment/configuration
-OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
-MODEL = os.environ.get("LLM_MODEL", "mistral")
+OLLAMA_BASE_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+OLLAMA_URL = OLLAMA_BASE_URL + "/api/generate"
+MODEL = os.environ.get("LLM_MODEL", "phi3:mini")  # Default to phi3:mini if available
 TEMPERATURE = float(os.environ.get("LLM_TEMPERATURE", "0.7"))
-TIMEOUT = int(os.environ.get("LLM_TIMEOUT", "30"))
+TIMEOUT = int(os.environ.get("LLM_TIMEOUT", "120000"))  # Increased to 120s for larger models like Mistral
 
 # Supported model configurations
 MODEL_CONFIG = {
@@ -41,28 +42,58 @@ MODEL_CONFIG = {
     }
 }
 
-SYSTEM_PROMPT = """You are a friendly and professional customer support assistant for an e-commerce platform. Your role is to help customers with inquiries about their orders, products, and account.
+SYSTEM_PROMPT = """Follow these rules strictly:
+Respond clearly and concisely (max 3 sentences unless required).
+Use only information provided in the Context—never guess or invent.
+If information is unavailable, say: “I don’t have that information. Would you like me to connect to the human agent?”
+Require users to log in for any personal, order, or account data.
+Always be factual and accurate.
 
-CORE RULES:
-1. Be helpful, friendly, and concise. Keep responses under 3 sentences unless more detail is needed.
-2. Use only information provided in the Context. Never invent order details, prices, or product information.
-3. If asked about data not in Context, say "I don't have that information" rather than guessing.
-4. For logged-out users asking for personal data: suggest they log in first.
-5. Always be factual about product details, order status, and policies.
+Handle user intents as follows:
+6. Orders: Confirm ID, status, and items from Context only.
+7. Products: List matches from Context only.
+8. Cart: Show items and totals; encourage checkout when appropriate.
+9. Account: Direct users to log in or use secure account settings.
+10. General: Provide platform help without speculation.
 
-HANDLING DIFFERENT INTENTS:
-- Order queries: Use Context data (order IDs, statuses, items). Confirm order details found.
-- Product search: List matching products with available information from Context.
-- Cart management: Show items and totals, encourage checkout when appropriate.
-- General questions: Provide helpful, accurate information about the platform.
-- Account/Profile: Politely ask users to log in or update profile through secure channels.
+If a request cannot be fulfilled:
+11. Missing data → Ask user to log in.
+12. No results → Ask user to refine the request.
+13. Unsupported → State limitation and suggest contacting support.
 
-IF USER DATA IS NOT AVAILABLE:
-- "I don't have your order history. Could you log in to check your orders?"
-- "I can't find products matching that search. Could you try different keywords?"
-- "That information isn't available to me. Please contact support for assistance."
+Tone:
+14. Professional, friendly, and natural—no filler or assumptions."""
 
-TONE: Professional but warm. Use natural language, avoid robotic responses. Be adaptable to any e-commerce platform style."""
+def get_available_models() -> list:
+    """Fetch list of available models from Ollama."""
+    try:
+        resp = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5)
+        if resp.status_code == 200:
+            models = resp.json().get("models", [])
+            return [m.get("name") for m in models if m.get("name")]
+    except Exception as e:
+        LOGGER.warning(f"Failed to fetch available models: {e}")
+    return []
+
+def get_best_available_model() -> str:
+    """Get the best available model from Ollama, fallback if needed."""
+    available = get_available_models()
+    if not available:
+        LOGGER.warning("No models available from Ollama")
+        return MODEL  # Return default
+    
+    # Prefer mistral, then phi3:mini, then any available
+    # for preferred in ["mistral:latest", "mistral", "phi3:mini", "phi3"]:
+    for preferred in ["phi3:mini", "phi3"]:
+        for model in available:
+            if preferred in model.lower() or model.lower() in preferred:
+                LOGGER.info(f"Selected model: {model}")
+                return model
+    
+    # If no preferred model, return the first available
+    selected = available[0]
+    LOGGER.info(f"No preferred model found, using: {selected}")
+    return selected
 
 def classify_intent_with_llm(user_text: str) -> str:
     """
@@ -78,7 +109,7 @@ User message: "{user_text}"
 
 Respond with ONLY the intent name, nothing else."""
     try:
-        model_name = MODEL_CONFIG.get(MODEL, {}).get("name", MODEL)
+        model_name = get_best_available_model()
         payload = {
             "model": model_name,
             "prompt": intent_prompt,
@@ -110,22 +141,24 @@ def generate_llm_reply(user_text: str, context: Dict) -> str:
     Generate a response using the LLM (Ollama).
     Returns a string reply. Handles all error cases gracefully.
     """
-    prompt = f"""{SYSTEM_PROMPT}
+    try:
+        # Format context nicely
+        context_str = "\n".join([f"- {k}: {v}" for k, v in context.items()])
+        prompt = f"""{SYSTEM_PROMPT}
 
 Context:
-{context}
+{context_str}
 
-User:
-{user_text}
+User: {user_text}
 """
-    model_name = MODEL_CONFIG.get(MODEL, {}).get("name", MODEL)
-    payload = {
-        "model": model_name,
-        "prompt": prompt,
-        "stream": False,
-        "temperature": TEMPERATURE
-    }
-    try:
+        model_name = get_best_available_model()
+        payload = {
+            "model": model_name,
+            "prompt": prompt,
+            "stream": False,
+            "temperature": TEMPERATURE
+        }
+        LOGGER.info(f"Sending request to Ollama with model: {model_name}")
         resp = requests.post(OLLAMA_URL, json=payload, timeout=TIMEOUT)
         resp.raise_for_status()
         data = resp.json()
@@ -143,3 +176,6 @@ User:
     except requests.RequestException as e:
         LOGGER.exception(f"LLM request failed: {e}")
         return "I encountered an error. Could you please try again?"
+    except Exception as e:
+        LOGGER.exception(f"Unexpected error in generate_llm_reply: {e}")
+        return "I encountered an unexpected error. Please try again."
