@@ -61,13 +61,22 @@
 </div>
 
 <script>
+function getSessionId() {
+    let sid = localStorage.getItem("session_id");
+    if (!sid) {
+        sid = crypto.randomUUID();
+        localStorage.setItem("session_id", sid);
+    }
+    return sid;
+}
+
 async function doLogin(event) {
     event.preventDefault();
     document.getElementById("error").innerText = "";
 
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
-    const session_id = "sess_" + Math.random().toString(36).substring(2, 12);
+    const session_id = getSessionId();
 
     try {
         const response = await fetch("/login", {
@@ -79,16 +88,19 @@ async function doLogin(event) {
         const data = await response.json();
 
         if (!data.success) {
-            document.getElementById("error").innerText = data.message || "Login failed";
+            document.getElementById("error").innerText =
+                data.message || "Login failed";
             return;
         }
 
-        localStorage.setItem("session_id", session_id);
         localStorage.setItem("user_email", email);
 
-        window.location.href = "/chat";
+        // ✅ FIX: redirect to UI page, not API
+        window.location.href = "/chat_ui";
+
     } catch (e) {
-        document.getElementById("error").innerText = "Backend not reachable. Start backend and try again.";
+        document.getElementById("error").innerText =
+            "Backend not reachable. Start backend and try again.";
     }
 }
 </script>
