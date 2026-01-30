@@ -2,8 +2,8 @@
 
 RANDOM_SEED = 42
 
-ARRIVAL_RATE = 1 / 2        # avg arrival every 2 minutes
-SERVICE_TIME = 6            # avg service time (minutes)
+ARRIVAL_RATE = 0.0002        # avg arrival every 2 minutes
+SERVICE_TIME = 1            # avg service time (minutes)
 PATIENCE_TIME = 5           # avg patience (minutes)
 
 WORKING_HOURS_MIN = 8 * 60  # 8 hours
@@ -19,36 +19,36 @@ TARGET_ABANDONMENT = 5.0
 CHATBOT_QUERIES = [
 
     # ---- Greetings / Small talk ----
-    "hi", "hello", "hey", "good morning", "good evening",
-    "are you there", "can you help me", "thanks", "thank you", "bye",
+    # "hi", "hello", "hey", "good morning", "good evening",
+    # "are you there", "can you help me", "thanks", "thank you", "bye",
 
     # ---- Orders ----
-    "my orders", "order history", "where is my order", "track my order",
-    "order status", "order delayed", "order not delivered",
-    "missing items in my order", "wrong item received",
-    "cancel my order", "order cancelled",
+    # "my orders", "order history", "where is my order", "track my order",
+    # "order status", "order delayed", "order not delivered",
+    # "missing items in my order", "wrong item received",
+    # "cancel my order", "order cancelled",
 
     # ---- Delivery / Shipping ----
-    "delivery status", "shipping status",
-    "when will my order arrive", "delivery failed",
-    "package not received", "change delivery address",
+    # "delivery status", "shipping status",
+    # "when will my order arrive", "delivery failed",
+    # "package not received", "change delivery address",
 
     # ---- Cart / Checkout ----
-    "show my cart", "view cart", "items in my cart",
-    "remove item from cart", "update cart quantity",
-    "checkout issue", "cart not updating",
+    # "show my cart", "view cart", "items in my cart",
+    # "remove item from cart", "update cart quantity",
+    # "checkout issue", "cart not updating",
 
     # ---- Wishlist ----
     "wishlist", "view wishlist", "remove from wishlist",
 
     # ---- Returns ----
-    "return my order", "how do i return a product",
-    "return status", "return pickup scheduled",
+    # "return my order", "how do i return a product",
+    # "return status", "return pickup scheduled",
 
     # ---- Refunds / Payments ----
-    "refund status", "refund not received",
-    "when will i get my refund", "payment failed",
-    "charged twice", "partial refund",
+    # "refund status", "refund not received",
+    # "when will i get my refund", "payment failed",
+    # "charged twice", "partial refund",
 
     # ---- Account / Login ----
     "cannot login", "forgot password", "reset password",

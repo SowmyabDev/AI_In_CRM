@@ -2,14 +2,22 @@ import simpy
 import random
 import numpy as np
 import pandas as pd
-from config import *
+
+from simulation.config import *
+from crm_chatbot.chatbot_engine import chatbot_resolves_query
+
 
 def set_random_seeds():
     random.seed(RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
 
 def chatbot_resolves():
-    return random.random() < CHATBOT_ACCURACY
+    """
+    Simulation-facing chatbot call.
+    Treats chatbot as a black box.
+    """
+    user_query = random.choice(CHATBOT_QUERIES)
+    return chatbot_resolves_query(user_query)
 
 def customer(env, agents, stats):
     arrival_time = env.now
@@ -35,7 +43,6 @@ def customer(env, agents, stats):
         yield env.timeout(service_time)
 
         stats["served"] += 1
-
 
 def arrival_process(env, agents, stats):
     while env.now < WORKING_HOURS_MIN:
@@ -68,11 +75,22 @@ def run_simulation(n_agents):
 
 def main():
     set_random_seeds()
-
     results = []
 
+    print("================ STARTING SIMULATION =================\n")
+
     for n_agents in range(1, MAX_AGENTS + 1):
+        print(f"Running simulation for N = {n_agents} agent(s)")
         avg_wait, abandon = run_simulation(n_agents)
+
+       
+
+        print(
+            f"[SIM DONE] Agents={n_agents} | "
+            f"AvgWait={avg_wait:.4f} min | "
+            f"Abandonment={abandon:.2f}%"
+        )
+
         results.append({
             "Agents": n_agents,
             "Avg Wait Time (min)": avg_wait,
@@ -82,13 +100,13 @@ def main():
     df = pd.DataFrame(results)
 
     df["Dist_to_Optimal"] = np.sqrt(
-        df["Avg Wait Time (min)"]**2 +
-        df["Abandonment %"]**2
+        df["Avg Wait Time (min)"] ** 2 +
+        df["Abandonment %"] ** 2
     )
 
     df["Dist_to_TARGET"] = np.sqrt(
-        (df["Avg Wait Time (min)"] - TARGET_AVG_WAIT)**2 +
-        (df["Abandonment %"] - TARGET_ABANDONMENT)**2
+        (df["Avg Wait Time (min)"] - TARGET_AVG_WAIT) ** 2 +
+        (df["Abandonment %"] - TARGET_ABANDONMENT) ** 2
     )
 
     optimal_idx = df["Dist_to_Optimal"].idxmin()
@@ -105,18 +123,18 @@ def main():
     df_final["Avg Wait Time (min)"] = df_final["Avg Wait Time (min)"].round(4)
     df_final["Abandonment %"] = df_final["Abandonment %"].round(4)
 
-
     print("\n-------------- STAFFING RESULTS (1 to OPTIMAL) --------------\n")
-    print(df_final[[
-        "Agents",
-        "Avg Wait Time (min)",
-        "Abandonment %",
-        "Label"
-    ]].to_string(index=False))
+    print(
+        df_final[[
+            "Agents",
+            "Avg Wait Time (min)",
+            "Abandonment %",
+            "Label"
+        ]].to_string(index=False)
+    )
 
     print(f"\nAcceptable agents (Target): {df.loc[acceptable_idx, 'Agents']}")
     print(f"Optimal agents (Perfect): {optimal_agents}")
-
 
 
 if __name__ == "__main__":
