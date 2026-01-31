@@ -54,9 +54,9 @@ def chat(req: ChatRequest):
 
     user_id = session.user_id
 
-    match = re.search(r"(?i)\bORD[^\s]+\b", req.message)
+    match = re.search(r"(ORD\d{8})", req.message.upper())
     if match:
-        order_code = match.group(0).upper()
+        order_code = match.group(1)
 
         order = get_order_by_code(db, user_id, order_code)
         if not order:
@@ -72,15 +72,15 @@ def chat(req: ChatRequest):
             )
             if delivery:
                 return ChatResponse(
-                    reply=f"🚚 Order {order_code} is currently **{delivery.status}**."
+                    reply=f"🚚 Order {order_code} is currently {delivery.status}."
                 )
             else:
                 return ChatResponse(
-                    reply=f"📦 Order {order_code} is **{order.status}**."
+                    reply=f"📦 Order {order_code} is {order.status}."
                 )
 
         return ChatResponse(
-            reply=f"📦 Order {order_code} status: **{order.status}**."
+            reply=f"📦 Order {order_code} status: {order.status}."
         )
 
     intent = detect_intent(req.message)
@@ -101,7 +101,7 @@ def chat(req: ChatRequest):
             return ChatResponse(reply="📦 You don’t have any orders yet.")
 
         return ChatResponse(
-            reply="📦 **Your orders are:**\n\n" +
+            reply="📦 Your orders are:\n\n" +
             "\n".join(f"{o.order_code} — {o.status}" for o in orders)
         )
 
@@ -113,7 +113,7 @@ def chat(req: ChatRequest):
             )
 
         return ChatResponse(
-            reply="🚚 **Your active deliveries are:**\n\n" +
+            reply="🚚 Your active deliveries are:\n\n" +
             "\n".join(f"{o} — {s}" for o, s in deliveries)
         )
 
@@ -126,7 +126,7 @@ def chat(req: ChatRequest):
 
         names = "\n".join(f"• {row[0]}" for row in items)
         return ChatResponse(
-            reply="🛒 **Your cart items are:**\n\n" + names
+            reply="🛒 Your cart items are:\n\n" + names
         )
 
     if intent == "wishlist":
@@ -139,7 +139,7 @@ def chat(req: ChatRequest):
 
             names = "\n".join(f"• {row[0]}" for row in items)
             return ChatResponse(
-                reply="🧡 **Your wishlist items are:**\n\n" + names
+                reply="🧡 Your wishlist items are:\n\n" + names
             )
         except Exception:
             return ChatResponse(
@@ -154,7 +154,7 @@ def chat(req: ChatRequest):
             )
 
         return ChatResponse(
-            reply="↩️ **Your return requests are:**\n\n" +
+            reply="↩️ Your return requests are:\n\n" +
             "\n".join(f"{o} — {s}" for o, s in r)
         )
 
@@ -166,7 +166,7 @@ def chat(req: ChatRequest):
             )
 
         return ChatResponse(
-            reply="💰 **Your refunds are:**\n\n" +
+            reply="💰 Your refunds are:\n\n" +
             "\n".join(f"{o} — ₹{a} ({s})" for o, a, s in r)
         )
 
