@@ -20,15 +20,14 @@ def chatbot_resolves():
     print("Resolved by chatbot:", resolved)
     return resolved
 
-
 def customer(env, agents, stats):
-    arrival_time = env.now
 
     if chatbot_resolves():
         stats["resolved_by_bot"] += 1
         return
 
     stats["escalated"] += 1
+    queue_entry_time = env.now   
 
     with agents.request() as request:
         patience = random.expovariate(1.0 / PATIENCE_TIME)
@@ -38,13 +37,14 @@ def customer(env, agents, stats):
             stats["abandoned"] += 1
             return
 
-        wait_time = env.now - arrival_time
+        wait_time = env.now - queue_entry_time
         stats["wait_times"].append(wait_time)
 
         service_time = random.expovariate(1.0 / SERVICE_TIME)
         yield env.timeout(service_time)
 
         stats["served"] += 1
+
 
 
 def arrival_process(env, agents, stats):
