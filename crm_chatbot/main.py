@@ -32,6 +32,7 @@ def chat_page(request: Request):
 def login(req: LoginRequest):
     db = SessionLocal()
     user = db.query(User).filter_by(email=req.email).first()
+
     if not user or user.password != req.password:
         return {"success": False}
 
@@ -53,10 +54,9 @@ def chat(req: ChatRequest):
 
     user_id = session.user_id
 
-    # 🔍 ORDER-ID AWARE LOGIC (ORDYYYYMMDD)
-    match = re.search(r"(ORD\d{8})", req.message.upper())
+    match = re.search(r"(?i)\bORD[^\s]+\b", req.message)
     if match:
-        order_code = match.group(1)
+        order_code = match.group(0).upper()
 
         order = get_order_by_code(db, user_id, order_code)
         if not order:
@@ -72,18 +72,17 @@ def chat(req: ChatRequest):
             )
             if delivery:
                 return ChatResponse(
-                    reply=f"🚚 Order {order_code} is currently {delivery.status}."
+                    reply=f"🚚 Order {order_code} is currently **{delivery.status}**."
                 )
             else:
                 return ChatResponse(
-                    reply=f"📦 Order {order_code} is {order.status}."
+                    reply=f"📦 Order {order_code} is **{order.status}**."
                 )
 
         return ChatResponse(
-            reply=f"📦 Order {order_code} status: {order.status}."
+            reply=f"📦 Order {order_code} status: **{order.status}**."
         )
 
-    # 🔍 INTENT-BASED FLOW
     intent = detect_intent(req.message)
 
     if intent == "greet":
@@ -93,38 +92,41 @@ def chat(req: ChatRequest):
 
     if intent == "goodbye":
         return ChatResponse(
-        reply="😊 You’re welcome! Happy to help. If you need anything else, just let me know."
-    )
-
+            reply="😊 You’re welcome! Happy to help. If you need anything else, just let me know."
+        )
 
     if intent == "my_orders":
         orders = get_orders(db, user_id)
         if not orders:
-            return ChatResponse(reply="You have no orders.")
+            return ChatResponse(reply="📦 You don’t have any orders yet.")
 
         return ChatResponse(
-            reply="\n".join(
-                f"{o.order_code} — {o.status}" for o in orders
-            )
+            reply="📦 **Your orders are:**\n\n" +
+            "\n".join(f"{o.order_code} — {o.status}" for o in orders)
         )
 
     if intent == "delivery_status":
         deliveries = get_deliveries(db, user_id)
         if not deliveries:
             return ChatResponse(
-                reply="You have no active deliveries."
+                reply="🚚 You have no active deliveries."
             )
 
         return ChatResponse(
-            reply="\n".join(
-                f"🚚 {o} — {s}" for o, s in deliveries
-            )
+            reply="🚚 **Your active deliveries are:**\n\n" +
+            "\n".join(f"{o} — {s}" for o, s in deliveries)
         )
 
     if intent == "show_cart":
         items = get_cart(db, user_id)
+        if not items:
+            return ChatResponse(
+                reply="🛒 Your cart is empty."
+            )
+
+        names = "\n".join(f"• {row[0]}" for row in items)
         return ChatResponse(
-            reply=f"Your cart has {len(items)} item(s)."
+            reply="🛒 **Your cart items are:**\n\n" + names
         )
 
     if intent == "wishlist":
@@ -132,12 +134,12 @@ def chat(req: ChatRequest):
             items = get_wishlist(db, user_id)
             if not items:
                 return ChatResponse(
-                    reply="Your wishlist is empty."
+                    reply="🧡 Your wishlist is empty."
                 )
 
             names = "\n".join(f"• {row[0]}" for row in items)
             return ChatResponse(
-                reply=f"🧡 Your wishlist:\n{names}"
+                reply="🧡 **Your wishlist items are:**\n\n" + names
             )
         except Exception:
             return ChatResponse(
@@ -146,30 +148,36 @@ def chat(req: ChatRequest):
 
     if intent == "return_request":
         r = get_returns(db, user_id)
+        if not r:
+            return ChatResponse(
+                reply="↩️ You have no return requests."
+            )
+
         return ChatResponse(
-            reply="\n".join(
-                f"{o} — {s}" for o, s in r
-            ) or "No returns found."
+            reply="↩️ **Your return requests are:**\n\n" +
+            "\n".join(f"{o} — {s}" for o, s in r)
         )
 
     if intent == "refund_query":
         r = get_refunds(db, user_id)
+        if not r:
+            return ChatResponse(
+                reply="💰 You have no refunds."
+            )
+
         return ChatResponse(
-            reply="\n".join(
-                f"{o} — ₹{a} ({s})" for o, a, s in r
-            ) or "No refunds found."
+            reply="💰 **Your refunds are:**\n\n" +
+            "\n".join(f"{o} — ₹{a} ({s})" for o, a, s in r)
         )
-    
+
     if intent == "human_agent":
         return ChatResponse(
-        reply="🔁 Redirecting you to a human agent. You’ll receive a callback shortly."
+            reply="🔁 Redirecting you to a human agent. You’ll receive a callback shortly."
+        )
+
+    return ChatResponse(
+        reply=generate_llm_reply(req.message)
     )
-
-
-    # 🔥 LLM FALLBACK
-    # 🔥 LLM FALLBACK (general questions, policies, help, etc.)
-    return ChatResponse(reply=generate_llm_reply(req.message))
-
 
 
 @app.get("/health")

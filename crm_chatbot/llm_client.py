@@ -1,4 +1,3 @@
-# crm_chatbot/llm_client.py
 import requests
 
 OLLAMA_URL = "http://localhost:11434/api/generate"

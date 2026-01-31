@@ -6,7 +6,6 @@ import pandas as pd
 from simulation.config import *
 from crm_chatbot.chatbot_engine import chatbot_resolves_query
 
-
 def set_random_seeds():
     random.seed(RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
@@ -17,7 +16,10 @@ def chatbot_resolves():
     Treats chatbot as a black box.
     """
     user_query = random.choice(CHATBOT_QUERIES)
-    return chatbot_resolves_query(user_query)
+    resolved=chatbot_resolves_query(user_query)
+    print("Resolved by chatbot:", resolved)
+    return resolved
+
 
 def customer(env, agents, stats):
     arrival_time = env.now
@@ -44,11 +46,13 @@ def customer(env, agents, stats):
 
         stats["served"] += 1
 
+
 def arrival_process(env, agents, stats):
     while env.now < WORKING_HOURS_MIN:
         interarrival = random.expovariate(ARRIVAL_RATE)
         yield env.timeout(interarrival)
         env.process(customer(env, agents, stats))
+
 
 def run_simulation(n_agents):
     env = simpy.Environment()
@@ -80,10 +84,10 @@ def main():
     print("================ STARTING SIMULATION =================\n")
 
     for n_agents in range(1, MAX_AGENTS + 1):
-        print(f"Running simulation for N = {n_agents} agent(s)")
-        avg_wait, abandon = run_simulation(n_agents)
 
-       
+        print(f"Running simulation for N = {n_agents} agent(s)")
+
+        avg_wait, abandon = run_simulation(n_agents)
 
         print(
             f"[SIM DONE] Agents={n_agents} | "
@@ -96,6 +100,16 @@ def main():
             "Avg Wait Time (min)": avg_wait,
             "Abandonment %": abandon
         })
+
+        if (
+            avg_wait <= TARGET_AVG_WAIT and
+            abandon <= TARGET_ABANDONMENT
+        ):
+            print(
+                "\nStopping simulation early: "
+                "target wait time and abandonment achieved.\n"
+            )
+            break
 
     df = pd.DataFrame(results)
 

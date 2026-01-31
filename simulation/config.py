@@ -1,9 +1,8 @@
-# ================= SIMULATION CONFIG =================
 
 RANDOM_SEED = 42
 
-ARRIVAL_RATE = 0.0002        # avg arrival every 2 minutes
-SERVICE_TIME = 1            # avg service time (minutes)
+ARRIVAL_RATE = 0.01        # avg arrival every 2 minutes
+SERVICE_TIME = 2            # avg service time (minutes)
 PATIENCE_TIME = 5           # avg patience (minutes)
 
 WORKING_HOURS_MIN = 8 * 60  # 8 hours
@@ -12,15 +11,11 @@ MAX_AGENTS = 20
 TARGET_AVG_WAIT = 2.0
 TARGET_ABANDONMENT = 5.0
 
-
-# ================= CHATBOT CONFIG =================
-
-# Comprehensive CRM-style chatbot queries
 CHATBOT_QUERIES = [
 
     # ---- Greetings / Small talk ----
-    # "hi", "hello", "hey", "good morning", "good evening",
-    # "are you there", "can you help me", "thanks", "thank you", "bye",
+    "hi", "hello", "hey", "good morning", "good evening",
+    "are you there", "can you help me", "thanks", "thank you", "bye",
 
     # ---- Orders ----
     # "my orders", "order history", "where is my order", "track my order",
