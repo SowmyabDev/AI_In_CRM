@@ -11,6 +11,8 @@ INTENTS = {
 
 ESCALATION_INTENTS = {
     "human_agent": [
+        "human",
+        "support",
         "agent",
         "human agent",
         "connect me to human",
