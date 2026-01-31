@@ -7,7 +7,12 @@ def get_orders(db, user_id):
     return db.query(Order).filter_by(user_id=user_id).all()
 
 def get_cart(db, user_id):
-    return db.query(CartItem).filter_by(user_id=user_id).all()
+    return (
+        db.query(Product.name, CartItem.quantity)
+        .join(Product, Product.id == CartItem.product_id)
+        .filter(CartItem.user_id == user_id)
+        .all()
+    )
 
 def get_wishlist(db, user_id):
     return (

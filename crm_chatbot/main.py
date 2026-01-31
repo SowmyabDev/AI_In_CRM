@@ -101,7 +101,7 @@ def chat(req: ChatRequest):
             return ChatResponse(reply="📦 You don’t have any orders yet.")
 
         return ChatResponse(
-            reply="📦 Your orders are:\n\n" +
+            reply="📦 Your orders are:" +
             "\n".join(f"{o.order_code} — {o.status}" for o in orders)
         )
 
@@ -119,15 +119,21 @@ def chat(req: ChatRequest):
 
     if intent == "show_cart":
         items = get_cart(db, user_id)
+
         if not items:
             return ChatResponse(
                 reply="🛒 Your cart is empty."
             )
 
-        names = "\n".join(f"• {row[0]}" for row in items)
-        return ChatResponse(
-            reply="🛒 Your cart items are:\n\n" + names
+        cart_lines = "\n".join(
+            f"• {name} (Qty: {qty})"
+            for name, qty in items
         )
+
+        return ChatResponse(
+            reply=f"🛒 Your cart items are:\n{cart_lines}"
+        )
+
 
     if intent == "wishlist":
         try:
