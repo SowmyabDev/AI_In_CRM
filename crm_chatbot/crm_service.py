@@ -54,7 +54,6 @@ def get_refunds(db, user_id):
         .all()
     )
 
-# 🔥 NEW: Fetch order by order_code
 def get_order_by_code(db, user_id, order_code):
     return (
         db.query(Order)
